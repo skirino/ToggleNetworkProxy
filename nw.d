@@ -1,4 +1,4 @@
-module main;
+module nw;
 
 import std.stdio;
 import std.string;
@@ -8,10 +8,8 @@ import std.functional;
 import std.c.stdlib;
 import core.sys.posix.unistd;
 
-
-immutable string PROXY_IP   = "10.5.134.56";
-immutable string PROXY_PORT = "8080";
-immutable string PROXY_HOST = PROXY_IP ~ ':' ~ PROXY_PORT;
+// PROXY_IP, PROXY_PORT and PROXY_HOST should be defined in constants.d
+import constants;
 
 
 class ConfFile
@@ -90,25 +88,16 @@ bool containsProxy(string s)
 // Assuming Gnome desktop
 void gsettingsProxyOn()
 {
-  int euid = geteuid();
-  seteuid(getuid());
-
-  system("gsettings set org.gnome.system.proxy mode 'manual'");
-  system(("gsettings set org.gnome.system.proxy.socks host '" ~ PROXY_IP   ~ "'").toStringz);
-  system(("gsettings set org.gnome.system.proxy.socks port '" ~ PROXY_PORT ~ "'").toStringz);
-
-  seteuid(euid);
+  system("dbus-launch gsettings set org.gnome.system.proxy mode 'manual'");
+  system(("dbus-launch gsettings set org.gnome.system.proxy.socks host '" ~ PROXY_IP   ~ "'").toStringz);
+  system(("dbus-launch gsettings set org.gnome.system.proxy.socks port '" ~ PROXY_PORT ~ "'").toStringz);
 }
 
 void gsettingsProxyOff()
 {
-  int euid = geteuid();
-  seteuid(getuid());
-
-  system("gsettings set org.gnome.system.proxy mode 'none'");
-  system("gsettings reset org.gnome.system.proxy.socks host");
-
-  seteuid(euid);
+  system("dbus-launch gsettings set org.gnome.system.proxy mode 'none'");
+  system("dbus-launch gsettings reset org.gnome.system.proxy.socks host");
+  system("dbus-launch gsettings reset org.gnome.system.proxy.socks port");
 }
 
 
@@ -163,7 +152,7 @@ void main(string[] args)
   }
 
   switch(args[1]){
-  case ")reconnect":
+  case "reconnect":
     reconnect();
     break;
   case "useproxy":
