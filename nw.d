@@ -6,10 +6,15 @@ import std.array;
 import std.algorithm;
 import std.functional;
 import std.c.stdlib;
-import core.sys.posix.unistd;
 
 // PROXY_IP, PROXY_PORT and PROXY_HOST should be defined in constants.d
 import constants;
+
+
+pure bool containsProxy(string s)
+{
+  return std.string.indexOf(s, "proxy") != -1;
+}
 
 
 class ConfFile
@@ -79,23 +84,18 @@ class AptConfFile : ConfFile
   }
 }
 
-bool containsProxy(string s)
-{
-  return std.string.indexOf(s, "proxy") != -1;
-}
-
 
 // Assuming Gnome desktop
 void gsettingsProxyOn()
 {
-  system("dbus-launch gsettings set org.gnome.system.proxy mode 'manual'");
+  system( "dbus-launch gsettings set org.gnome.system.proxy mode 'manual'");
   system(("dbus-launch gsettings set org.gnome.system.proxy.socks host '" ~ PROXY_IP   ~ "'").toStringz);
   system(("dbus-launch gsettings set org.gnome.system.proxy.socks port '" ~ PROXY_PORT ~ "'").toStringz);
 }
 
 void gsettingsProxyOff()
 {
-  system("dbus-launch gsettings set org.gnome.system.proxy mode 'none'");
+  system("dbus-launch gsettings set   org.gnome.system.proxy mode 'none'");
   system("dbus-launch gsettings reset org.gnome.system.proxy.socks host");
   system("dbus-launch gsettings reset org.gnome.system.proxy.socks port");
 }
