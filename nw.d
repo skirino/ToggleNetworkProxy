@@ -13,9 +13,8 @@ import constants;
 
 pure bool containsProxy(string s)
 {
-  return std.string.indexOf(s, "proxy") != -1;
+  return std.string.indexOf(s, "proxy") != -1 || std.string.indexOf(s, "PROXY") != -1;
 }
-
 
 class ConfFile
 {
@@ -24,10 +23,7 @@ class ConfFile
   this()
   {
     auto f = File(filepath());
-    string s;
-    while((s = f.readln) !is null){
-      lines_ ~= s;
-    }
+    lines_ = f.byLine.map!(cs => cast(string)cs).array;
   }
 
   bool proxySettingPresent()
@@ -63,32 +59,30 @@ class EnvironmentFile : ConfFile
   override string[] proxySettingLines()
   {
     return [
-      "http_proxy=\"http://"   ~ PROXY_HOST ~ "/\"\n",
-      "https_proxy=\"https://" ~ PROXY_HOST ~ "/\"\n",
-      "socks_proxy=\"socks://" ~ PROXY_HOST ~ "/\"\n",
+      "http_proxy=\"http://"   ~ PROXY_HOST ~ "/\"",
+      "ftp_proxy=\"ftp://"     ~ PROXY_HOST ~ "/\"",
+      "https_proxy=\"https://" ~ PROXY_HOST ~ "/\"",
+      "no_proxy=\"127.0.0.1,localhost\"",
+
+      // For programs that only look at env vars with capital letters
+      "HTTP_PROXY=\"http://"   ~ PROXY_HOST ~ "/\"",
+      "FTP_PROXY=\"ftp://"     ~ PROXY_HOST ~ "/\"",
+      "HTTPS_PROXY=\"https://" ~ PROXY_HOST ~ "/\"",
+      "NO_PROXY=\"127.0.0.1,localhost\"",
     ];
   }
 }
-
-class AptConfFile : ConfFile
-{
-  override string filepath() {return "/etc/apt/apt.conf";}
-
-  override string[] proxySettingLines()
-  {
-    return [
-      "Acquire::http::proxy \"http://"   ~ PROXY_HOST ~ "/\";\n",
-      "Acquire::https::proxy \"https://" ~ PROXY_HOST ~ "/\";\n",
-      "Acquire::socks::proxy \"socks://" ~ PROXY_HOST ~ "/\";\n",
-    ];
-  }
-}
-
 
 // Assuming Gnome desktop
 void gsettingsProxyOn()
 {
   system( "dbus-launch gsettings set org.gnome.system.proxy mode 'manual'");
+  system(("dbus-launch gsettings set org.gnome.system.proxy.http  host '" ~ PROXY_IP   ~ "'").toStringz);
+  system(("dbus-launch gsettings set org.gnome.system.proxy.http  port '" ~ PROXY_PORT ~ "'").toStringz);
+  system(("dbus-launch gsettings set org.gnome.system.proxy.ftp   host '" ~ PROXY_IP   ~ "'").toStringz);
+  system(("dbus-launch gsettings set org.gnome.system.proxy.ftp   port '" ~ PROXY_PORT ~ "'").toStringz);
+  system(("dbus-launch gsettings set org.gnome.system.proxy.https host '" ~ PROXY_IP   ~ "'").toStringz);
+  system(("dbus-launch gsettings set org.gnome.system.proxy.https port '" ~ PROXY_PORT ~ "'").toStringz);
   system(("dbus-launch gsettings set org.gnome.system.proxy.socks host '" ~ PROXY_IP   ~ "'").toStringz);
   system(("dbus-launch gsettings set org.gnome.system.proxy.socks port '" ~ PROXY_PORT ~ "'").toStringz);
 }
@@ -96,6 +90,12 @@ void gsettingsProxyOn()
 void gsettingsProxyOff()
 {
   system("dbus-launch gsettings set   org.gnome.system.proxy mode 'none'");
+  system("dbus-launch gsettings reset org.gnome.system.proxy.http  host");
+  system("dbus-launch gsettings reset org.gnome.system.proxy.http  port");
+  system("dbus-launch gsettings reset org.gnome.system.proxy.ftp   host");
+  system("dbus-launch gsettings reset org.gnome.system.proxy.ftp   port");
+  system("dbus-launch gsettings reset org.gnome.system.proxy.https host");
+  system("dbus-launch gsettings reset org.gnome.system.proxy.https port");
   system("dbus-launch gsettings reset org.gnome.system.proxy.socks host");
   system("dbus-launch gsettings reset org.gnome.system.proxy.socks port");
 }
@@ -105,30 +105,28 @@ void reconnect()
 {
   system("nmcli con down id 'Wired connection 1'");
   system("nmcli con up   id 'Wired connection 1'");
-  system("/etc/init.d/dns-clean restart");
+  system("[ -f '/etc/init.d/dns-clean' ] && /etc/init.d/dns-clean restart");
 }
 
-void useproxy()
+void proxyon()
 {
   auto env = new EnvironmentFile;
   if(env.proxySettingPresent()){
     return;
   }
   env.addProxySetting();
-  (new AptConfFile).addProxySetting();
 
   gsettingsProxyOn();
   reconnect();
 }
 
-void unuseproxy()
+void proxyoff()
 {
   auto env = new EnvironmentFile;
   if(!env.proxySettingPresent()){
     return;
   }
   env.removeProxySetting();
-  (new AptConfFile).removeProxySetting();
 
   gsettingsProxyOff();
   reconnect();
@@ -138,9 +136,9 @@ void usage()
 {
   writeln(q{
     Usage:
-      nw reconnect  -- Reconnect wired connection
-      nw useproxy   -- Enable proxy settings and reconnect
-      nw unuseproxy -- Disable proxy settings and reconnect
+      nw reconnect -- Reconnect wired connection
+      nw proxyon   -- Enable proxy settings and reconnect
+      nw proxyoff  -- Disable proxy settings and reconnect
   }.outdent);
 }
 
@@ -155,11 +153,11 @@ void main(string[] args)
   case "reconnect":
     reconnect();
     break;
-  case "useproxy":
-    useproxy();
+  case "proxyon":
+    proxyon();
     break;
-  case "unuseproxy":
-    unuseproxy();
+  case "proxyoff":
+    proxyoff();
     break;
   default:
     usage();
