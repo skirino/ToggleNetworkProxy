@@ -23,7 +23,7 @@ class ConfFile
   this()
   {
     auto f = File(filepath());
-    lines_ = f.byLine.map!(cs => cast(string)cs).array;
+    lines_ = f.byLine.map!(cs => cs.idup).array;
   }
 
   bool proxySettingPresent()
@@ -45,7 +45,7 @@ class ConfFile
 
   void updateConfFile()
   {
-    File(filepath(), "w").write(lines_.join(""));
+    File(filepath(), "w").write(lines_.join("\n") ~ "\n");
   }
 
   abstract string filepath();
