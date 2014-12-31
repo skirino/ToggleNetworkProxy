@@ -1,4 +1,4 @@
-BIN=/home/skirino/bin/nw
+BIN=${HOME}/bin/nw
 
 nw: nw.d
 	dmd *.d -ofnw

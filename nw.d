@@ -5,9 +5,9 @@ import std.string;
 import std.array;
 import std.algorithm;
 import std.functional;
-import std.c.stdlib;
+import std.process;
 
-// PROXY_IP, PROXY_PORT and PROXY_HOST should be defined in constants.d
+// CONNECTION_NAME, PROXY_IP, PROXY_PORT and PROXY_HOST should be defined in constants.d
 import constants;
 
 
@@ -76,36 +76,36 @@ class EnvironmentFile : ConfFile
 // Assuming Gnome desktop
 void gsettingsProxyOn()
 {
-  system( "dbus-launch gsettings set org.gnome.system.proxy mode 'manual'");
-  system(("dbus-launch gsettings set org.gnome.system.proxy.http  host '" ~ PROXY_IP   ~ "'").toStringz);
-  system(("dbus-launch gsettings set org.gnome.system.proxy.http  port '" ~ PROXY_PORT ~ "'").toStringz);
-  system(("dbus-launch gsettings set org.gnome.system.proxy.ftp   host '" ~ PROXY_IP   ~ "'").toStringz);
-  system(("dbus-launch gsettings set org.gnome.system.proxy.ftp   port '" ~ PROXY_PORT ~ "'").toStringz);
-  system(("dbus-launch gsettings set org.gnome.system.proxy.https host '" ~ PROXY_IP   ~ "'").toStringz);
-  system(("dbus-launch gsettings set org.gnome.system.proxy.https port '" ~ PROXY_PORT ~ "'").toStringz);
-  system(("dbus-launch gsettings set org.gnome.system.proxy.socks host '" ~ PROXY_IP   ~ "'").toStringz);
-  system(("dbus-launch gsettings set org.gnome.system.proxy.socks port '" ~ PROXY_PORT ~ "'").toStringz);
+  executeShell( "dbus-launch gsettings set org.gnome.system.proxy mode 'manual'");
+  executeShell(("dbus-launch gsettings set org.gnome.system.proxy.http  host '" ~ PROXY_IP   ~ "'"));
+  executeShell(("dbus-launch gsettings set org.gnome.system.proxy.http  port '" ~ PROXY_PORT ~ "'"));
+  executeShell(("dbus-launch gsettings set org.gnome.system.proxy.ftp   host '" ~ PROXY_IP   ~ "'"));
+  executeShell(("dbus-launch gsettings set org.gnome.system.proxy.ftp   port '" ~ PROXY_PORT ~ "'"));
+  executeShell(("dbus-launch gsettings set org.gnome.system.proxy.https host '" ~ PROXY_IP   ~ "'"));
+  executeShell(("dbus-launch gsettings set org.gnome.system.proxy.https port '" ~ PROXY_PORT ~ "'"));
+  executeShell(("dbus-launch gsettings set org.gnome.system.proxy.socks host '" ~ PROXY_IP   ~ "'"));
+  executeShell(("dbus-launch gsettings set org.gnome.system.proxy.socks port '" ~ PROXY_PORT ~ "'"));
 }
 
 void gsettingsProxyOff()
 {
-  system("dbus-launch gsettings set   org.gnome.system.proxy mode 'none'");
-  system("dbus-launch gsettings reset org.gnome.system.proxy.http  host");
-  system("dbus-launch gsettings reset org.gnome.system.proxy.http  port");
-  system("dbus-launch gsettings reset org.gnome.system.proxy.ftp   host");
-  system("dbus-launch gsettings reset org.gnome.system.proxy.ftp   port");
-  system("dbus-launch gsettings reset org.gnome.system.proxy.https host");
-  system("dbus-launch gsettings reset org.gnome.system.proxy.https port");
-  system("dbus-launch gsettings reset org.gnome.system.proxy.socks host");
-  system("dbus-launch gsettings reset org.gnome.system.proxy.socks port");
+  executeShell("dbus-launch gsettings set   org.gnome.system.proxy mode 'none'");
+  executeShell("dbus-launch gsettings reset org.gnome.system.proxy.http  host");
+  executeShell("dbus-launch gsettings reset org.gnome.system.proxy.http  port");
+  executeShell("dbus-launch gsettings reset org.gnome.system.proxy.ftp   host");
+  executeShell("dbus-launch gsettings reset org.gnome.system.proxy.ftp   port");
+  executeShell("dbus-launch gsettings reset org.gnome.system.proxy.https host");
+  executeShell("dbus-launch gsettings reset org.gnome.system.proxy.https port");
+  executeShell("dbus-launch gsettings reset org.gnome.system.proxy.socks host");
+  executeShell("dbus-launch gsettings reset org.gnome.system.proxy.socks port");
 }
 
 
 void reconnect()
 {
-  system("nmcli con down id 'Wired connection 1'");
-  system("nmcli con up   id 'Wired connection 1'");
-  system("[ -f '/etc/init.d/dns-clean' ] && /etc/init.d/dns-clean restart");
+  executeShell("nmcli con down id '" ~ CONNECTION_NAME ~ "'");
+  executeShell("nmcli con up   id '" ~ CONNECTION_NAME ~ "'");
+  executeShell("[ -f '/etc/init.d/dns-clean' ] && /etc/init.d/dns-clean restart");
 }
 
 void proxyon()
